@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/base64"
-	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -14,8 +12,76 @@ import (
 )
 
 func main() {
+	const url = "https://sub.paasmi.com/subscribe/58648/pzODI9eUg3vO?mode=3"
 
-	res, err := http.Get("https://sub.paasmi.com/subscribe/58648/pzODI9eUg3vO?mode=3")
+	content := subsribeContent(url)
+
+	// 解析订阅
+	scanner := bufio.NewScanner(bytes.NewReader(content))
+	chanVmess := make(chan Vmess)
+	var wg sync.WaitGroup
+	for scanner.Scan() {
+		wg.Add(1)
+		line := scanner.Text()
+		go func(l string) {
+			defer wg.Done()
+			protocol := line[:strings.Index(l, ":")]
+			switch protocol {
+			case "ss":
+				//parseSS(l)
+			case "ssr":
+				//parseSSR(l)
+			case "vmess":
+				v, err := parseVMESS(l)
+				if err == nil {
+					//fmt.Println(v)
+					chanVmess <- v
+				}
+			default:
+				log.Printf("解析不了的协议：%s", protocol)
+			}
+
+		}(line)
+	}
+
+	// 将订阅转为 v2ray 格式
+	done := make(chan bool)
+	go func() {
+		// vmess
+		v2rayConfig := NewV2rayConfig(withDefaultLog(), withDefaultInbound(), vmessBound(chanVmess))
+		//config, _ := json.MarshalIndent(v2rayConfig, "", "  ")
+		//fmt.Println(string(config))
+		PrintV2rayOutbounds(v2rayConfig)
+
+		done <- true
+	}()
+
+	wg.Wait()
+	close(chanVmess)
+
+	select {
+	case <-done:
+	}
+
+}
+
+func vmessBound(ch <-chan Vmess) OutboundV2ray {
+	var v2rays []V2ray
+	for v := range ch {
+		v2ray, err := v.toV2ray()
+		if err != nil {
+			log.Println(err)
+		}
+		v2rays = v2ray.Join(v2rays)
+	}
+	// 构建outbound
+	outbound := NewV2rayOutBound("vmess", v2rays)
+
+	return outbound
+}
+
+func subsribeContent(url string) []byte {
+	res, err := http.Get(url)
 	if err != nil {
 		log.Fatal("不能访问订阅链接")
 	}
@@ -28,98 +94,5 @@ func main() {
 	if err != nil {
 		log.Fatal("base64解码订阅内容失败")
 	}
-	//fmt.Println(string(content))
-
-	chanVmess := make(chan vmess)
-
-	var wg sync.WaitGroup
-
-	scanner := bufio.NewScanner(bytes.NewReader(content))
-
-	for scanner.Scan() {
-		wg.Add(1)
-		line := scanner.Text()
-		go func(l string) {
-			defer wg.Done()
-			protocol := line[:strings.Index(l, ":")]
-			switch protocol {
-			case "ss":
-				//ParseSS(l)
-			case "ssr":
-				//ParseSSR(l)
-			case "vmess":
-				v, err := ParseVMESS(l)
-				if err == nil {
-					chanVmess <- v
-				}
-			default:
-				log.Printf("解析不了的协议：%s", protocol)
-			}
-
-		}(line)
-	}
-
-	done := make(chan bool)
-	go func() {
-		for vms := range chanVmess {
-			fmt.Println(vms)
-		}
-		done <- true
-	}()
-
-	wg.Wait()
-
-	close(chanVmess)
-
-	select {
-	case <-done:
-	}
-
-}
-
-func ParseSS(str string) {
-
-}
-
-func ParseSSR(str string) {
-
-}
-
-type vmess struct {
-	V    string `json:"v"`
-	Ps   string `json:"ps"`
-	Add  string `json:"add"`
-	Port string `json:"port"`
-	Id   string `json:"id"`
-	Aid  int `json:"aid"`
-	Net  string `json:"net"`
-	Type string `json:"type"`
-	Host string `json:"host"`
-	Path string `json:"path"`
-	Tls  string `json:"tls"`
-}
-
-func ParseVMESS(str string) (vmess, error) {
-	cont := StripProtocol(str)
-	var v vmess
-
-	decode, err := base64.StdEncoding.DecodeString(cont)
-	if err != nil {
-		log.Printf("base64解码失败，%s", cont)
-		return v, err
-	}
-
-	//fmt.Println(string(decode))
-
-	err = json.Unmarshal(decode, &v)
-	if err != nil {
-		log.Printf("反序列化json失败，%s", err)
-		return v, err
-	}
-	fmt.Println(v)
-	return v, nil
-}
-
-func StripProtocol(str string) string {
-	return str[strings.Index(str, "//")+2:]
+	return content
 }
