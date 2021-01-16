@@ -6,30 +6,23 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 )
 
-func WriteConfig(config V2rayConfig) error {
-	homeDir, err := os.UserHomeDir()
+func WriteConfig(configFile string, config V2rayConfig) error {
+	configName := path.Base(configFile)
+	dir := configFile[:strings.LastIndex(configFile, configName)]
+
+	err := MkdirIfNotExist(dir)
 	if err != nil {
 		return err
 	}
-	//p := "/etc/v2ray"
-	p := path.Join(homeDir, ".config/v2ray")
-	_, err = os.Stat(p)
-	if err != nil {
-		if os.IsNotExist(err) {
-			err := os.Mkdir(p, 0644)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	file := path.Join(p, "config.json")
+
 	data, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(file, data, 0644)
+	err = ioutil.WriteFile(configFile, data, 0644)
 	if err != nil {
 		return err
 	}
@@ -37,16 +30,9 @@ func WriteConfig(config V2rayConfig) error {
 }
 
 func LogWriter(logPath string) (io.Writer, error) {
-	if logPath != "" {
-		_, err := os.Stat(logPath)
-		if err != nil {
-			if os.IsNotExist(err) {
-				err := os.Mkdir(logPath, 0644)
-				if err != nil {
-					return nil, err
-				}
-			}
-		}
+	err := MkdirIfNotExist(logPath)
+	if err != nil {
+		return nil, err
 	}
 
 	filePath := path.Join(logPath, "access.log")
@@ -55,4 +41,19 @@ func LogWriter(logPath string) (io.Writer, error) {
 		return nil, err
 	}
 	return f, nil
+}
+
+func MkdirIfNotExist(dir string) error {
+	if dir != "" {
+		_, err := os.Stat(dir)
+		if err != nil {
+			if os.IsNotExist(err) {
+				err := os.Mkdir(dir, 0755)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }

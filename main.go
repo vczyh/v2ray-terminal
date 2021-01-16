@@ -12,6 +12,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -22,10 +23,12 @@ var logger *log.Logger
 func main() {
 	var url string
 	var v2ray string
+	var v2rayConfigFile string
 	var logPath string
 
 	flag.StringVar(&url, "url", "", "订阅链接")
 	flag.StringVar(&v2ray, "v2ray", "", "v2ray可执行文件路径")
+	flag.StringVar(&v2rayConfigFile, "v2rayConfig", "", "v2ray配置文件路径")
 	flag.StringVar(&logPath, "logPath", "", "日志路径")
 	flag.Parse()
 
@@ -39,6 +42,14 @@ func main() {
 		_, _ = fmt.Scanln(&v2ray)
 	}
 
+	if v2rayConfigFile == "" {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			fmt.Println("获取Home路径失败")
+		}
+		v2rayConfigFile = path.Join(homeDir, ".config/v2ray", "config.json")
+	}
+
 	logWriter, err := LogWriter(logPath)
 	if err != nil {
 		fmt.Println(err)
@@ -47,7 +58,7 @@ func main() {
 
 	// 输出
 	multiWriter := io.MultiWriter(os.Stdout, logWriter)
-	logger = log.New(multiWriter, "v3ray", log.LUTC)
+	logger = log.New(multiWriter, "[v2rayT]", log.LUTC)
 
 	content := subsribeContent(url)
 	// 解析订阅
@@ -84,7 +95,7 @@ func main() {
 		// vmess
 		v2rayConfig := NewV2rayConfig(withDefaultLog(), withDefaultInbound(), vmessBound(chanVmess))
 		PrintV2rayOutbounds(v2rayConfig)
-		err := WriteConfig(v2rayConfig)
+		err := WriteConfig(v2rayConfigFile, v2rayConfig)
 		if err != nil {
 			logger.Println(err)
 			os.Exit(1)
@@ -93,7 +104,7 @@ func main() {
 		time.AfterFunc(5*time.Hour, func() {
 			cancelFunc()
 		})
-		err = ExeRealTimeOut(ctx, multiWriter, v2ray, "-config", "/Users/zhangyuheng/.config/v2ray/config.json")
+		err = ExeRealTimeOut(ctx, multiWriter, v2ray, "-config", v2rayConfigFile)
 		if err != nil {
 			logger.Println(err)
 			os.Exit(1)
