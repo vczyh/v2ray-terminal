@@ -89,11 +89,8 @@ func NewV2rayOutBound(protocol string, v2rays []V2ray) OutboundV2ray {
 	}
 }
 
-// vmess
-type VmessSettings struct {
-	Vnext []VmessV2ray `json:"vnext"`
-}
 type VmessV2ray struct {
+	Name    string           `json:"-"`
 	Address string           `json:"address"`
 	Port    int              `json:"port"`
 	Users   []VmessUserV2ray `json:"users"`
@@ -109,6 +106,7 @@ func (vv VmessV2ray) Join(v2rays []V2ray) []V2ray {
 
 func (vv VmessV2ray) Print() []string {
 	return []string{
+		vv.Name,
 		vv.Address,
 		strconv.Itoa(vv.Port),
 		vv.Users[0].Id,

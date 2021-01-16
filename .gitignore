@@ -1,1 +1,5 @@
 .idea
+access.log
+err.txt
+out.txt
+v2ray-terminal

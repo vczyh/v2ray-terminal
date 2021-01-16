@@ -53,6 +53,7 @@ func (v *Vmess) toV2ray() (V2ray, error) {
 		return nil, err
 	}
 	return VmessV2ray{
+		Name:    v.Ps,
 		Address: v.Add,
 		Port:    port,
 		Users:   []VmessUserV2ray{{v.Id, v.Aid}},
