@@ -21,7 +21,7 @@ v2rayT -url 订阅链接 -v2ray v2ray可执行文件路径
 | v2ray       | v2ray可执行文件路径                                 | 必须                            |
 | v2rayConfig | v2ray配置文件路径，你不需要创建它，v2rayT会自动创建 | $HOME/.config/v2ray/config.json |
 | logPath     | 日志目录，例如`/var/log/v2ray`                      | 当前目录                        |
-| socksPort   | socks5端口                                          | 默认1080                        |
+| socksPort   | socks5端口                                          | 1080                            |
 
 除此之外，可以使用交互模式。
 
