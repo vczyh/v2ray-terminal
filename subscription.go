@@ -28,22 +28,19 @@ type Vmess struct {
 
 func parseVMESS(str string) (Vmess, error) {
 	cont := stripProtocol(str)
-	var v Vmess
 
+	var v Vmess
 	decode, err := base64.StdEncoding.DecodeString(cont)
 	if err != nil {
 		log.Printf("base64解码失败，%s", cont)
 		return v, err
 	}
 
-	//fmt.Println(string(decode))
-
 	err = json.Unmarshal(decode, &v)
 	if err != nil {
 		log.Printf("反序列化json失败，%s", err)
 		return v, err
 	}
-	//fmt.Println(v)
 	return v, nil
 }
 

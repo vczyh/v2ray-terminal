@@ -62,7 +62,7 @@ func main() {
 	multiWriter := io.MultiWriter(os.Stdout, logWriter)
 	logger = log.New(multiWriter, "[v2rayT]", log.LUTC)
 
-	content := subsribeContent(url)
+	content := subscribeContent(url)
 	// 解析订阅
 	scanner := bufio.NewScanner(bytes.NewReader(content))
 	chanVmess := make(chan Vmess)
@@ -81,7 +81,6 @@ func main() {
 			case "vmess":
 				v, err := parseVMESS(l)
 				if err == nil {
-					//fmt.Println(v)
 					chanVmess <- v
 				}
 			default:
@@ -138,7 +137,7 @@ func vmessBound(ch <-chan Vmess) OutboundV2ray {
 	return outbound
 }
 
-func subsribeContent(url string) []byte {
+func subscribeContent(url string) []byte {
 	res, err := http.Get(url)
 	if err != nil {
 		logger.Fatal("不能访问订阅链接")
