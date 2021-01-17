@@ -1,9 +1,8 @@
 ## Introduce
 
-管理V2ray工具
-
 - 支持订阅链接
 - 自动生成v2ray配置文件
+- 管理v2ray的生命周期
 
 ## Install
 
