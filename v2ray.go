@@ -56,9 +56,9 @@ func (i InboundV2ray) apply(config *V2rayConfig) {
 	config.Inbounds = append(config.Inbounds, i)
 }
 
-func withDefaultInbound() InboundV2ray {
+func withDefaultSocksInbound(port int) InboundV2ray {
 	return InboundV2ray{
-		Port:     1080,
+		Port:     port,
 		Protocol: "socks",
 		Sniffing: InboundSniffingV2ray{
 			Enabled:      true,

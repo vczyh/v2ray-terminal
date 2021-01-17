@@ -25,11 +25,13 @@ func main() {
 	var v2ray string
 	var v2rayConfigFile string
 	var logPath string
+	var socksPort int
 
 	flag.StringVar(&url, "url", "", "订阅链接")
 	flag.StringVar(&v2ray, "v2ray", "", "v2ray可执行文件路径")
 	flag.StringVar(&v2rayConfigFile, "v2rayConfig", "", "v2ray配置文件路径")
 	flag.StringVar(&logPath, "logPath", "", "日志路径")
+	flag.IntVar(&socksPort,"socksPort",1080,"socks端口")
 	flag.Parse()
 
 	if url == "" {
@@ -93,7 +95,7 @@ func main() {
 	done := make(chan bool)
 	go func() {
 		// vmess
-		v2rayConfig := NewV2rayConfig(withDefaultLog(), withDefaultInbound(), vmessBound(chanVmess))
+		v2rayConfig := NewV2rayConfig(withDefaultLog(), withDefaultSocksInbound(socksPort), vmessBound(chanVmess))
 		PrintV2rayOutbounds(v2rayConfig)
 		err := WriteConfig(v2rayConfigFile, v2rayConfig)
 		if err != nil {
