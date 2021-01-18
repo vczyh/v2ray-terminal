@@ -15,23 +15,24 @@ import (
 	"path"
 	"strings"
 	"sync"
-	"time"
+)
+
+var (
+	url             string
+	v2ray           string
+	v2rayConfigFile string
+	logPath         string
+	socksPort       int
 )
 
 var logger *log.Logger
 
 func main() {
-	var url string
-	var v2ray string
-	var v2rayConfigFile string
-	var logPath string
-	var socksPort int
-
 	flag.StringVar(&url, "url", "", "订阅链接")
 	flag.StringVar(&v2ray, "v2ray", "", "v2ray可执行文件路径")
 	flag.StringVar(&v2rayConfigFile, "v2rayConfig", "", "v2ray配置文件路径")
 	flag.StringVar(&logPath, "logPath", "", "日志路径")
-	flag.IntVar(&socksPort,"socksPort",1080,"socks端口")
+	flag.IntVar(&socksPort, "socksPort", 1080, "socks端口")
 	flag.Parse()
 
 	if url == "" {
@@ -48,6 +49,7 @@ func main() {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
 			fmt.Println("获取Home路径失败")
+			os.Exit(1)
 		}
 		v2rayConfigFile = path.Join(homeDir, ".config/v2ray", "config.json")
 	}
@@ -58,12 +60,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	// 输出
 	multiWriter := io.MultiWriter(os.Stdout, logWriter)
-	logger = log.New(multiWriter, "[v2rayT]", log.LUTC)
+
+	logger = log.New(multiWriter, "[v2rayT] ", log.LUTC)
 
 	content := subscribeContent(url)
-	// 解析订阅
 	scanner := bufio.NewScanner(bytes.NewReader(content))
 	chanVmess := make(chan Vmess)
 	var wg sync.WaitGroup
@@ -101,10 +102,8 @@ func main() {
 			logger.Println(err)
 			os.Exit(1)
 		}
-		ctx, cancelFunc := context.WithCancel(context.Background())
-		time.AfterFunc(5*time.Hour, func() {
-			cancelFunc()
-		})
+		// TODO cancel()
+		ctx, _ := context.WithCancel(context.Background())
 		err = ExeRealTimeOut(ctx, multiWriter, v2ray, "-config", v2rayConfigFile)
 		if err != nil {
 			logger.Println(err)
@@ -132,7 +131,6 @@ func vmessBound(ch <-chan Vmess) OutboundV2ray {
 		}
 		v2rays = v2ray.Join(v2rays)
 	}
-	// 构建outbound
 	outbound := NewV2rayOutBound("vmess", v2rays)
 	return outbound
 }
