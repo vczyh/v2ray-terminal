@@ -66,7 +66,7 @@ func main() {
 
 	content := subscribeContent(url)
 	scanner := bufio.NewScanner(bytes.NewReader(content))
-	chanVmess := make(chan Vmess)
+	chanVMESS := make(chan Vmess)
 	var wg sync.WaitGroup
 	for scanner.Scan() {
 		wg.Add(1)
@@ -82,7 +82,7 @@ func main() {
 			case "vmess":
 				v, err := parseVMESS(l)
 				if err == nil {
-					chanVmess <- v
+					chanVMESS <- v
 				}
 			default:
 				logger.Printf("解析不了的协议：%s", protocol)
@@ -94,8 +94,7 @@ func main() {
 	// 将订阅转为 v2ray 格式
 	done := make(chan bool)
 	go func() {
-		// vmess
-		v2rayConfig := NewV2rayConfig(withDefaultLog(), withDefaultSocksInbound(socksPort), vmessBound(chanVmess))
+		v2rayConfig := NewV2rayConfig(withDefaultLog(), withDefaultSocksInbound(socksPort), VMESSBound(chanVMESS))
 		PrintV2rayOutbounds(v2rayConfig)
 		err := WriteConfig(v2rayConfigFile, v2rayConfig)
 		if err != nil {
@@ -114,7 +113,7 @@ func main() {
 	}()
 
 	wg.Wait()
-	close(chanVmess)
+	close(chanVMESS)
 
 	select {
 	case <-done:
@@ -122,7 +121,7 @@ func main() {
 
 }
 
-func vmessBound(ch <-chan Vmess) OutboundV2ray {
+func VMESSBound(ch <-chan Vmess) OutboundV2ray {
 	var v2rays []V2ray
 	for v := range ch {
 		v2ray, err := v.toV2ray()
