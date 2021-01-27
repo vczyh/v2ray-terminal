@@ -67,6 +67,7 @@ func main() {
 	content := subscribeContent(url)
 	scanner := bufio.NewScanner(bytes.NewReader(content))
 	chanVMESS := make(chan Vmess)
+	chanSS := make(chan *SS)
 	var wg sync.WaitGroup
 	for scanner.Scan() {
 		wg.Add(1)
@@ -76,7 +77,10 @@ func main() {
 			protocol := line[:strings.Index(l, ":")]
 			switch protocol {
 			case "ss":
-				//parseSS(l)
+				ss, err := parseSS(l)
+				if err == nil {
+					chanSS <- ss
+				}
 			case "ssr":
 				//parseSSR(l)
 			case "vmess":
@@ -130,7 +134,7 @@ func VMESSBound(ch <-chan Vmess) OutboundV2ray {
 		}
 		v2rays = v2ray.Join(v2rays)
 	}
-	outbound := NewV2rayOutBound("vmess", v2rays)
+	outbound := NewVMessOutBound(v2rays)
 	return outbound
 }
 

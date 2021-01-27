@@ -57,7 +57,48 @@ func (v *Vmess) toV2ray() (V2ray, error) {
 	}, nil
 }
 
-// tool
+type SS struct {
+	Name     string
+	Server   string
+	Port     int
+	Cipher   string
+	Password string
+}
+
+func parseSS(ss string) (*SS, error) {
+	ss = stripProtocol(ss)
+
+	// auth
+	auth := ss[:strings.Index(ss, "@")]
+	auth = auth + "="
+	server := ss[strings.Index(ss, "@")+1 : strings.Index(ss, ":")]
+	decode, err := base64.StdEncoding.DecodeString(auth)
+	if err != nil {
+		logger.Printf("base64解码失败，%s", auth)
+		return nil, err
+	}
+	auths := strings.Split(string(decode), ":")
+
+	//port
+	port := ss[strings.Index(ss, ":")+1 : strings.Index(ss, "/?")]
+	p, err := strconv.Atoi(port)
+	if err != nil {
+		return nil, err
+	}
+
+	return &SS{
+		Server:   server,
+		Port:     p,
+		Cipher:   auths[0],
+		Password: auths[1],
+	}, nil
+}
+
+func (s *SS) toV2ray() (V2ray, error) {
+	// todo
+	return
+}
+
 func stripProtocol(str string) string {
 	return str[strings.Index(str, "//")+2:]
 }

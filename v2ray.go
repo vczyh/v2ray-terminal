@@ -80,15 +80,25 @@ func (o OutboundV2ray) apply(config *V2rayConfig) {
 	config.Outbounds = append(config.Outbounds, o)
 }
 
-func NewV2rayOutBound(protocol string, v2rays []V2ray) OutboundV2ray {
+func NewVMessOutBound(v2rays []V2ray) OutboundV2ray {
 	return OutboundV2ray{
-		Protocol: protocol,
+		Protocol: "vmess",
 		Settings: map[string]interface{}{
 			"vnext": v2rays,
 		},
 	}
 }
 
+func NewSSOutBound(v2rays []V2ray) OutboundV2ray {
+	return OutboundV2ray{
+		Protocol: "shadowsocks",
+		Settings: map[string]interface{}{
+			"servers": v2rays,
+		},
+	}
+}
+
+// VMess
 type VmessV2ray struct {
 	Name    string           `json:"-"`
 	Address string           `json:"address"`
@@ -113,3 +123,14 @@ func (vv VmessV2ray) Print() []string {
 		strconv.Itoa(vv.Users[0].AlterId),
 	}
 }
+
+// SS
+
+type SSV2ray struct {
+	Name string
+	Address string
+	Port int
+	Method string
+
+}
+
